@@ -1,10 +1,21 @@
 // for using environment variables 
+
+//An environment variable is a variable outside of your application's code that stores configuration settings, system information, or other data that your application needs to function correctly.
+
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 //for parsing request body
 
-const md5 = require('md5');
+// for using hash functions
+// const md5 = require('md5');
+
+// now here we are using advanced method to secure password which is bcrypt
+const bcrypt = require('bcrypt'); 
+const saltRounds = 5;
+// salt is a kind of random number which is added to the password to make it more secure
+// saltRounds is the number of times we add the salt to the password to increase its strength
+
 
 // EJS allows you to embed JavaScript code within your HTML templates, making it easier to generate dynamic content, iterate over data, and conditionally render HTML elements.
 const ejs = require('ejs');
@@ -59,14 +70,42 @@ app.get("/register",function(req,res) {
 })
 
 
+
+// using hash functions
 // if user lands on register page then below route will be executed
+
+
+// app.post("/register",function(req,res) {
+//     //creating new instance of User model 
+// const newUser = new User({
+//     // getting email and password from the user
+//     email: req.body.username,
+//     // converting password into hash string
+//     password: md5(req.body.password)
+// })
+// //.save() is a method to save or update the document
+// newUser.save()
+// //if properly saved then thow user to secrets page
+//   .then(result => {
+//     res.render("secrets");
+//     console.log(result)
+//   })
+//   .catch(err => {
+//     console.log(err);
+//   });
+// })
+
+
+
+
 app.post("/register",function(req,res) {
-    //creating new instance of User model 
+
+    bcrypt.hash(req.body.password, saltRounds, function(err, hash) {
+            //creating new instance of User model 
 const newUser = new User({
     // getting email and password from the user
     email: req.body.username,
-    // converting password into hash string
-    password: md5(req.body.password)
+    password: hash
 })
 //.save() is a method to save or update the document
 newUser.save()
@@ -79,26 +118,55 @@ newUser.save()
     console.log(err);
   });
 })
+    });
+
+// checking password using md5
+// when user hits this route
 
 
+// app.post ("/login", function(req, res) {
+//     const username = req.body.username;    
+//     const password = md5(req.body.password);    
+
+//     User.findOne({ email: username })
+//     .then(foundUser => {
+//         // checking password
+//       if(foundUser){
+//           if(foundUser.password == password){
+//             // to get decrypted password
+//             console.log(password)
+//               res.render("secrets")
+//           }else {
+//             // Wrong password
+//             res.render("login", { error: "Incorrect password" });
+//           }
+//       }
+//       else {
+//         // User not found
+//         res.render("login", { error: "User not found" });
+//       }
+//     })
+//     .catch(err => {
+//       console.log(err)
+//     });
+// })
+
+
+// checking password using bscript
 // when user hits this route
 app.post ("/login", function(req, res) {
     const username = req.body.username;    
-    const password = md5(req.body.password);    
+    const password = req.body.password;    
 
-// finding email
     User.findOne({ email: username })
     .then(foundUser => {
-        // checking password
       if(foundUser){
-          if(foundUser.password == password){
-            // to get decrypted password
-            console.log(password)
-              res.render("secrets")
-          }else {
-            // Wrong password
-            res.render("login", { error: "Incorrect password" });
-          }
+        // checking password
+        bcrypt.compare(password, foundUser.password, function(err, result) {
+           if(result === true){
+            res.render("secrets")
+           }
+        });
       }
       else {
         // User not found
@@ -109,6 +177,7 @@ app.post ("/login", function(req, res) {
       console.log(err)
     });
 })
+
 
 app.listen(8080,function() {
     console.log('listening on port 8080');
