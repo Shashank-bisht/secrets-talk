@@ -1,12 +1,15 @@
+// for using environment variables 
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 //for parsing request body
 
+const md5 = require('md5');
+
 // EJS allows you to embed JavaScript code within your HTML templates, making it easier to generate dynamic content, iterate over data, and conditionally render HTML elements.
 const ejs = require('ejs');
 const mongoose = require('mongoose');
-const encrypt = require('mongoose-encryption');
+// const encrypt = require('mongoose-encryption');
 const app = express();
 
 
@@ -31,8 +34,8 @@ const userSchema = new mongoose.Schema({
 
 // userSchema.plugin(encrypt,{secret: secret, encryptedFields: ["password"]});
 
-
-userSchema.plugin(encrypt,{secret: process.env.SECRET, encryptedFields: ["password"]});
+// here we are using environment variables so that when we push the code our key should not be accessible to the people
+// userSchema.plugin(encrypt,{secret: process.env.SECRET, encryptedFields: ["password"]});
 
 //Models in Mongoose are used to interact with MongoDB collections. They define the structure of documents within a collection and provide methods for querying, creating, updating, and deleting documents in that collection.
 
@@ -62,7 +65,8 @@ app.post("/register",function(req,res) {
 const newUser = new User({
     // getting email and password from the user
     email: req.body.username,
-    password: req.body.password
+    // converting password into hash string
+    password: md5(req.body.password)
 })
 //.save() is a method to save or update the document
 newUser.save()
@@ -80,7 +84,7 @@ newUser.save()
 // when user hits this route
 app.post ("/login", function(req, res) {
     const username = req.body.username;    
-    const password = req.body.password;    
+    const password = md5(req.body.password);    
 
 // finding email
     User.findOne({ email: username })
